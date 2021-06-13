@@ -31,7 +31,7 @@ export default {
   name: 'ViewPort',
   data () {
     const scene = new THREE.Scene()
-    const renderer = new THREE.WebGLRenderer()
+    const renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true})
     const camera = new THREE.PerspectiveCamera( 45, 1, 0.1, 200000 );
     camera.up.set(0, 0, 1);
 
