@@ -254,6 +254,7 @@ label {
   transition: 0.8s;
   border-radius: 3px;
 	padding: 8px;
+  color: white;
 }
 
 .sidebar-icon:hover{
