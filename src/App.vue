@@ -1,29 +1,29 @@
 <template>
-  <div id="app">
-    <ViewPort></ViewPort>
-  </div>
+  <v-app>
+    <!-- <v-overlay 
+      absolute="true"
+      value="false"
+      opacity="0">
+    </v-overlay> -->
+    <ViewPort/>    
+  </v-app>
 </template>
 
 <script>
-import ViewPort from './components/ViewPort.vue'
+import ViewPort from './components/ViewPort';
+
 export default {
   name: 'App',
+
   components: {
-    ViewPort
-  }
-}
+    ViewPort,
+  },
+
+  data: () => ({
+    //
+  }),
+};
 </script>
 
-<style>
-body {
-  margin: 0;
-}
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin: 0;
-}
+<style scoped>
 </style>

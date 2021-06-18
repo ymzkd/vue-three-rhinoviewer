@@ -1,44 +1,34 @@
 <template>
   <div id="ViewPort">
-    <div id="sidebar">
-      <label class="sidebar-icon" for="fileinput">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-folder2-open"
-          viewBox="0 0 16 16">
-          <path
-            d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.311 1.184C7.985 3.648 8.48 4 9 4h4.5A1.5 1.5 0 0 1 15 5.5v.64c.57.265.94.876.856 1.546l-.64 5.124A2.5 2.5 0 0 1 12.733 15H3.266a2.5 2.5 0 0 1-2.481-2.19l-.64-5.124A1.5 1.5 0 0 1 1 6.14V3.5zM2 6h12v-.5a.5.5 0 0 0-.5-.5H9c-.964 0-1.71-.629-2.174-1.154C6.374 3.334 5.82 3 5.264 3H2.5a.5.5 0 0 0-.5.5V6zm-.367 1a.5.5 0 0 0-.496.562l.64 5.124A1.5 1.5 0 0 0 3.266 14h9.468a1.5 1.5 0 0 0 1.489-1.314l.64-5.124A.5.5 0 0 0 14.367 7H1.633z" />
-        </svg>
-        <input type="file" id="fileinput" name="fileinput" accept=".3dm" style="display: none;">
-      </label>
+    <NavPanel 
+      :layertree="layertree"
+      :layervisibles="layervisible" 
+      :layerexpanded="layerexpanded" 
+      @input="inputdone"
+      @adjast="adjastdone"
+      @fileinput="fileinputdone"
+      id="sidebar"/>
 
-      <div class="sidebar-icon" id="fitscale">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-arrows-angle-contract"
-          viewBox="0 0 16 16">
-          <path fill-rule="evenodd"
-            d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z" />
-        </svg>
-      </div>
-    </div>
-
-    <div ref="stage" id="main"></div>
+    <div ref="stage" id="viewmain"></div>
   </div>
 </template>
 
 <script>
+import NavPanel from './NavPanel';
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Rhino3dmLoader } from 'three/examples/jsm/loaders/3DMLoader';
 export default {
+  components: {
+    NavPanel,
+  },
   name: 'ViewPort',
   data () {
     const scene = new THREE.Scene()
     const renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true})
-    const camera = new THREE.PerspectiveCamera( 45, 1, 0.1, 200000 );
+    const camera = new THREE.PerspectiveCamera( 45, 1, 1, 200000 );
     camera.up.set(0, 0, 1);
-
-    const geometry = new THREE.BoxGeometry(2, 2, 2)
-    const material = new THREE.MeshNormalMaterial()
-    // const material = new THREE.MeshLambertMaterial({color: 0xb0bfdf});
-    const cube = new THREE.Mesh(geometry, material)
 
     const light = new THREE.HemisphereLight( 0xffffff, 0x444444, 1 );
 
@@ -51,21 +41,22 @@ export default {
       scene: scene,
       renderer: renderer,
       camera: camera,
-      cube: cube,
       controls: null,
       light: light,
       dirlight: dirlight,
       loader: loader,
       loadObj: null,
-      loadObjEdges: [],
-      reader: new FileReader()
+      loadObjEdges: {},
+      reader: new FileReader(),
+      layertree: [],
+      layervisible: [],
+      layerexpanded: [],
     } 
   },
   created () {
     this.scene.add(this.camera)
     this.scene.add(this.light)
     this.scene.add(this.dirlight)
-    // this.scene.add(this.cube)
     this.scene.background = new THREE.Color( 0xa0a0a0 );
   },
   mounted () {
@@ -85,8 +76,9 @@ export default {
     this.controls.target.set( 0, 0, 0 );
     this.controls.update();
 
+    this.reader.addEventListener('load', this.fileLoad, false);
+
     // Load 3dm
-    // サーバーにRhino本体不要？npmのrhino3dmがあれば動く？
     // THREE.3DMLoader: ObjectType_Brep has no associated mesh geometry.
     // というエラーが頻発してBrepを読み込めない。
     // https://discourse.mcneel.com/t/3dmloader-for-three-js/107702/13
@@ -95,17 +87,6 @@ export default {
     // 生成されるみたい。2021/3月くらいに議論に上がっているが、対応予定はよくわからない。
     this.loader.setLibraryPath('https://cdn.jsdelivr.net/npm/rhino3dm@0.15.0-beta/');
     this.load3dm('sample.3dm');
-
-    // Events
-    let inputFile = document.getElementById('fileinput');
-    inputFile.addEventListener('change', this.fileChange, false);
-    this.reader.addEventListener('load', this.fileLoad, false);
-
-    let fitButton = document.getElementById('fitscale')
-    fitButton.addEventListener('click', () => {
-      this.adjustCamera(this.loadObj)
-    })
-
     this.animate()
   },
   methods: {
@@ -120,43 +101,99 @@ export default {
     },
     load3dm(path) {
       this.loader.load(path, function (object) {
+
+        // Remove preloaded 3dm objects from scene
         if (this.loadObj) {
           this.scene.remove(this.loadObj)
           while (this.loadObjEdges.length > 0){
             this.scene.remove(this.loadObjEdges.pop())
           }
         }
+
+        // Set newloaded 3dm object to scene
         this.loadObj = object;
         this.scene.add(this.loadObj);
 
-        object.traverse( function(child) {
-          // Meshのマテリアルを変更する。
-          // if (child.material) {
-          //   const childmat = new THREE.MeshNormalMaterial();
-          //   childmat.side = THREE.DoubleSide;
-          //   child.material = childmat;
-          // }
-          
-          // エッジを表示・レイヤーのオンオフの反映
-          if ( Object.prototype.hasOwnProperty.call(child.userData, 'attributes')){
-          // if (child.userData.hasOwnProperty('attributes')){
-            let id = child.userData.attributes.layerIndex;
-            if (object.userData.layers[id].visible){
-              if (child.type == "Mesh") {
-                const edges = new THREE.EdgesGeometry(child.geometry, 60);
-                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
-                this.loadObjEdges.push(line)
-                this.scene.add(line);
+        // Construct Layer Tree
+        this.layertree = []
+        this.layervisible = []
+        this.layerexpanded = []
+        // Set Root
+        let layerTable = {
+          "00000000-0000-0000-0000-000000000000" : {
+            id: -1, 
+            parents: null, 
+            child:[], 
+            data: {}
+          }
+        }
+        // Collect Node
+        for (const key in object.userData.layers) {
+          if (Object.hasOwnProperty.call(object.userData.layers, key)) {
+            const layer = object.userData.layers[key];
+            layerTable[layer.id] = {
+              id: key, 
+              parents: layer.parentLayerId, 
+              child:[], 
+              data: {
+                name: layer.name, 
+                color: layer.color, 
+                expanded: layer.expanded,
+                visible: layer.visible
               }
             }
-            else {
-              child.visible = object.userData.layers[id].visible;
+            if (layer.visible) { this.layervisible.push(key) }
+            if (layer.expanded) { this.layerexpanded.push(key) }
+          }
+        }
+        // Collect Children
+        for (const key in object.userData.layers) {
+          if (Object.hasOwnProperty.call(object.userData.layers, key)) {
+            const layer = object.userData.layers[key];
+            layerTable[layer.parentLayerId].child.push(layer.id)
+          }
+        }
+        // Create formatted tree for vuetify treeview
+        this.layertree = this.bakeTree(layerTable, "00000000-0000-0000-0000-000000000000").children
+
+        // Visual setting for all objects
+        object.traverse( function(child) {
+          if ( Object.prototype.hasOwnProperty.call(child.userData, 'attributes')){
+            let id = child.userData.attributes.layerIndex;
+            // Create Mesh Edge
+            if (child.type == "Mesh") {
+              const edges = new THREE.EdgesGeometry(child.geometry, 60);
+              const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
+              this.loadObjEdges[child.uuid] = line
+              line.visible = object.userData.layers[id].visible;
+              this.scene.add(line);
             }
+            // apply object visible
+            child.visible = object.userData.layers[id].visible;
           }
         }.bind(this))
 
         this.adjustCamera(object);
+
       }.bind(this));
+    },
+    bakeTree(table, key){
+      const item = table[key]
+      const childs = []
+      for (const i in item.child) {
+        const node = table[item.child[i]];
+        if (node.child.length == 0) {
+          childs.push({id:node.id, name:node.data.name})
+        }
+        else {
+          childs.push(this.bakeTree(table, item.child[i]))
+        }
+      }
+      return {
+        id: item.id,
+        name: item.data.name,
+        children: childs
+      }
     },
     adjustCamera (object) {
 
@@ -175,38 +212,42 @@ export default {
 
       let sina = Math.sin(FoV * Math.PI / 360.0);
       let cameraOffs = cameraDir.clone();
-      cameraOffs.multiplyScalar(-bsphere.radius / sina);
+      let cameradistance = bsphere.radius / sina
+      cameraOffs.multiplyScalar(-cameradistance);
       let newCameraPos = bsphere.center.clone().add(cameraOffs);
 
       this.camera.position.copy(newCameraPos);
+      this.camera.far = cameradistance*5
       this.camera.lookAt(bsphere.center);
+      this.camera.updateProjectionMatrix()
       this.controls.target.copy(bsphere.center);
 
       this.controls.update();
     },
-    // var inputFile = document.getElementById('fileinput');
-    // var reader = new FileReader();
-
-    fileChange(ev) {
-      // var target = ev.target;
-      // var file = target.files[0];
-      // var type = file.type;
-      // var size = file.size;
-
-      // if (type !== 'image/jpeg') {
-      //   alert('選択できるファイルはJPEG画像だけです。');
-      //   inputFile.value = '';
-      //   return;
-      // }
-
-      this.reader.readAsDataURL(ev.target.files[0]);
+    inputdone(arr) { // Event
+      // Update Visivility
+      this.scene.traverse( function ( child ) {
+        if (Object.hasOwnProperty.call(child.userData, 'attributes')) {
+          if ( 'layerIndex' in child.userData.attributes ) {
+            child.visible = arr.includes(child.userData.attributes.layerIndex.toString())
+            if (child.type == "Mesh") {
+              this.loadObjEdges[child.uuid].visible = child.visible
+            }
+          }
+        }
+      }.bind(this) );
+    },
+    adjastdone() { // Event
+      this.adjustCamera(this.loadObj)
+    },
+    fileinputdone(file) { // Event
+      this.reader.readAsDataURL(file);
+      this.load3dm(this.reader.result);
+      console.log("file changed")
     },
     fileLoad() {
       this.load3dm(this.reader.result);
     }
-
-    // inputFile.addEventListener('change', fileChange, false);
-    // reader.addEventListener('load', fileLoad, false);
   }
 }
 </script>
@@ -236,7 +277,7 @@ a {
     z-index: 2;
 }
 
-#main {
+#viewmain {
     position: absolute;
     margin: 0;
     width: 100%;
