@@ -46,10 +46,10 @@
           <v-list-item
             link>
             <v-list-item-icon>
-              <v-icon @click="adjastdone">mdi-fit-to-page-outline</v-icon>
+              <v-icon @click="adjustdone">mdi-fit-to-page-outline</v-icon>
             </v-list-item-icon>
             <v-list-item-content>
-              Adjast Object
+              Adjust Object
             </v-list-item-content>
           </v-list-item>
 
@@ -145,8 +145,8 @@
       inputdone(arr) {
         this.$emit('input', arr)
       },
-      adjastdone() {
-        this.$emit('adjast')
+      adjustdone() {
+        this.$emit('adjust')
       },
       fileinputdone(file) {
         this.$emit('fileinput', file)

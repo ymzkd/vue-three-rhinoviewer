@@ -5,7 +5,7 @@
       :layervisibles="layervisible" 
       :layerexpanded="layerexpanded" 
       @input="inputdone"
-      @adjast="adjastdone"
+      @adjust="adjustdone"
       @fileinput="fileinputdone"
       id="sidebar"/>
 
@@ -237,7 +237,7 @@ export default {
         }
       }.bind(this) );
     },
-    adjastdone() { // Event
+    adjustdone() { // Event
       this.adjustCamera(this.loadObj)
     },
     fileinputdone(file) { // Event
