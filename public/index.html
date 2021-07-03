@@ -13,6 +13,12 @@
     <link rel="apple-touch-icon" href="<%= BASE_URL %>app-icon-180.png" sizes="180x180">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css">
+    <style>
+      body {
+        /* Androidでのスクロールを防ぐ(Safariは未対応) */
+        overscroll-behavior-y: none;
+      }
+    </style>
   </head>
   <body>
     <noscript>

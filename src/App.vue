@@ -22,6 +22,11 @@ export default {
   data: () => ({
     //
   }),
+  mounted: function() {
+    document.addEventListener('touchmove', function(event){
+        event.preventDefault();
+      }, { passive: false });
+  }
 };
 </script>
 
