@@ -1,11 +1,6 @@
 <template>
   <v-app>
-    <!-- <v-overlay 
-      absolute="true"
-      value="false"
-      opacity="0">
-    </v-overlay> -->
-    <ViewPort/>    
+    <ViewPort ref="viewcomp"/>    
   </v-app>
 </template>
 
@@ -20,12 +15,55 @@ export default {
   },
 
   data: () => ({
-    //
+    drag: Boolean,
+    file: null
   }),
+  methods: {
+    onWDrop(e) {
+      e.stopPropagation()
+      e.preventDefault()
+      this.drag = false
+
+      if (!e) {
+        return
+      }
+
+      if (!e.dataTransfer) {
+        return
+      }
+
+      if (e.dataTransfer.files.length === 0) {
+        return
+      }
+
+      this.file = e.dataTransfer.files[0]
+      this.$refs.viewcomp.fileinputdone(this.file)
+    },
+    onWEnter(e){
+      e.stopPropagation()
+      e.preventDefault();
+      this.drag = true;
+    },
+    onWLeave(e) {
+      e.stopPropagation()
+      e.preventDefault()
+      this.drag = false;
+    },
+    onWDragOver(e){
+      e.preventDefault()
+    }
+    
+  },
   mounted: function() {
     document.addEventListener('touchmove', function(event){
-        event.preventDefault();
-      }, { passive: false });
+      event.preventDefault();
+      }, { passive: false }
+    );
+
+    window.addEventListener('dragenter', this.onWEnter, false);
+    window.addEventListener('drop', this.onWDrop, false);
+    window.addEventListener('dragleave', this.onWLeave, false);
+    window.addEventListener('dragover', this.onWDragOver, false);
   }
 };
 </script>

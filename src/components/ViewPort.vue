@@ -241,6 +241,11 @@ export default {
       this.adjustCamera(this.loadObj)
     },
     fileinputdone(file) { // Event
+      // File Type Check
+      if (!file.name.match(/.+\.3dm/)) {
+        alert("3dmファイルのみ対応");
+        return;
+      }
       this.reader.readAsDataURL(file);
       this.load3dm(this.reader.result);
       console.log("file changed")
