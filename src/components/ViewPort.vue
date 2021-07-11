@@ -4,8 +4,10 @@
       :layertree="layertree"
       :layervisibles="layervisible" 
       :layerexpanded="layerexpanded" 
+      :bloburl="bloburl"
       @input="inputdone"
       @adjust="adjustdone"
+      @savefile="saveFile"
       @fileinput="fileinputdone"
       id="sidebar"/>
 
@@ -19,6 +21,7 @@ import NavPanel from './NavPanel';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Rhino3dmLoader } from 'three/examples/jsm/loaders/3DMLoader';
+import {USDZExporter} from 'three/examples/jsm/exporters/USDZExporter';
 export default {
   components: {
     NavPanel,
@@ -28,12 +31,12 @@ export default {
     const scene = new THREE.Scene()
     const renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true})
     const camera = new THREE.PerspectiveCamera( 45, 1, 1, 200000 );
-    camera.up.set(0, 0, 1);
+    // camera.up.set(0, 0, 1);
 
     const light = new THREE.HemisphereLight( 0xffffff, 0x444444, 1 );
 
     const dirlight = new THREE.DirectionalLight(0xffffff, 3);
-    dirlight.position.set(1, -2, 2);
+    dirlight.position.set(1, 2, -2);
     dirlight.castShadow = true;
 
     const loader = new Rhino3dmLoader();
@@ -51,6 +54,7 @@ export default {
       layertree: [],
       layervisible: [],
       layerexpanded: [],
+      bloburl: null
     } 
   },
   created () {
@@ -77,6 +81,7 @@ export default {
     this.controls.update();
 
     this.reader.addEventListener('load', this.fileLoad, false);
+    // this.addUSDZButton()
 
     // Load 3dm
     // THREE.3DMLoader: ObjectType_Brep has no associated mesh geometry.
@@ -105,12 +110,18 @@ export default {
         // Remove preloaded 3dm objects from scene
         if (this.loadObj) {
           this.scene.remove(this.loadObj)
-          while (this.loadObjEdges.length > 0){
-            this.scene.remove(this.loadObjEdges.pop())
+
+          // Remove Edge
+          for (let key in this.loadObjEdges) {
+            this.scene.remove(this.loadObjEdges[key]);
+            delete this.loadObjEdges[key]
           }
         }
 
         // Set newloaded 3dm object to scene
+        object.rotation.set(-Math.PI/2,0,0)
+        object.updateMatrix()
+        
         this.loadObj = object;
         this.scene.add(this.loadObj);
 
@@ -164,9 +175,14 @@ export default {
             if (child.type == "Mesh") {
               const edges = new THREE.EdgesGeometry(child.geometry, 60);
               const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
+              
+              line.rotation.set(-Math.PI/2,0,0)
+              line.updateMatrix()
+
               this.loadObjEdges[child.uuid] = line
-              line.visible = object.userData.layers[id].visible;
-              this.scene.add(line);
+              this.loadObjEdges[child.uuid].visible = object.userData.layers[id].visible;
+              this.scene.add(this.loadObjEdges[child.uuid]);
+              // this.scene.add(line);
             }
             // apply object visible
             child.visible = object.userData.layers[id].visible;
@@ -174,6 +190,7 @@ export default {
         }.bind(this))
 
         this.adjustCamera(object);
+        this.createBlob()
 
       }.bind(this));
     },
@@ -252,6 +269,36 @@ export default {
     },
     fileLoad() {
       this.load3dm(this.reader.result);
+    },
+    async createBlob() {
+      const exporter = new USDZExporter();
+
+      const exportscene = this.scene.clone()
+      exportscene.scale.set(0.001,0.001,0.001);
+      exportscene.updateMatrixWorld(true)
+
+      const data = await exporter.parse( exportscene );
+      const blob = new Blob( [ data ], { type: 'application/octet-stream' });
+      this.bloburl = URL.createObjectURL(blob )
+    },
+    async saveFile() {
+      const exporter = new USDZExporter();
+
+      const exportscene = this.scene.clone()
+      exportscene.scale.set(0.001,0.001,0.001);
+      exportscene.updateMatrixWorld(true)
+
+      const data = await exporter.parse( exportscene );
+      const blob = new Blob( [ data ], { type: 'application/octet-stream' });
+      this.bloburl = URL.createObjectURL(blob )
+
+      console.log(this.bloburl)
+      const a = Object.assign(document.createElement('a'), {
+        download:'model.usdz',
+        rel:"ar",
+        href:this.bloburl
+      });
+      a.click();
     }
   }
 }

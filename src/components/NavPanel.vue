@@ -21,7 +21,7 @@
             link
             @click="openLayer = !openLayer">
             <v-list-item-icon>
-                <v-icon>mdi-layers-outline</v-icon>
+                <v-icon color="black">mdi-layers-outline</v-icon>
             </v-list-item-icon>
             <v-list-item-content>
               Layer
@@ -33,7 +33,7 @@
             link>
             <v-list-item-icon>
               <label class="navicon" for="fileinput">
-                <v-icon>mdi-folder-open-outline</v-icon>
+                <v-icon color="black">mdi-folder-open-outline</v-icon>
                 <input type="file" id="fileinput" name="fileinput" accept=".3dm" style="display: none;">
               </label>
             </v-list-item-icon>
@@ -46,10 +46,25 @@
           <v-list-item
             link>
             <v-list-item-icon>
-              <v-icon @click="adjustdone">mdi-fit-to-page-outline</v-icon>
+              <v-icon color="black" @click="adjustdone">mdi-fit-to-page-outline</v-icon>
             </v-list-item-icon>
             <v-list-item-content>
               Adjust Object
+            </v-list-item-content>
+          </v-list-item>
+
+          <!-- AR Button -->
+          <v-list-item
+            link>
+            <v-list-item-icon>
+              <div>
+                <a rel="ar" :href="bloburl" download="model.usdz">
+                  <img class="naviconimg" src="cube-scan.svg">
+                </a>
+              </div>
+            </v-list-item-icon>
+            <v-list-item-content>
+              AR View
             </v-list-item-content>
           </v-list-item>
 
@@ -84,7 +99,7 @@
 <script>
   export default {
     name: 'NavPanel',
-    props: ["layertree", "layervisibles", "layerexpanded"],
+    props: ["layertree", "layervisibles", "layerexpanded", "bloburl"],
     data () {
       return {
         openLayer: false,
@@ -148,6 +163,9 @@
       adjustdone() {
         this.$emit('adjust')
       },
+      emitsavefile() {
+        this.$emit('savefile')
+      },
       fileinputdone(file) {
         this.$emit('fileinput', file)
       },
@@ -162,11 +180,16 @@
 
       var inputFile = document.getElementById('fileinput');
       inputFile.addEventListener('change', this.fileChange, false);
+      console.log(this.bloburl)
     }
   }
 </script>
 <style scoped>
 .navicon {
   cursor : pointer;
+}
+.naviconimg {
+  fill: orange;
+  color: aqua;
 }
 </style>
