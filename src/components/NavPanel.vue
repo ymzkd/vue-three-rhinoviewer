@@ -53,6 +53,19 @@
             </v-list-item-content>
           </v-list-item>
 
+          <!-- AR Button -->
+          <v-list-item
+            link>
+            <v-list-item-icon>
+              <a rel="ar" download="model.usdz">
+                <v-icon @click="emitsavefile"> mdi-cube-scan  </v-icon>
+              </a>
+            </v-list-item-icon>
+            <v-list-item-content>
+              AR View
+            </v-list-item-content>
+          </v-list-item>
+
         </v-list>
       </v-navigation-drawer>
 
@@ -84,7 +97,7 @@
 <script>
   export default {
     name: 'NavPanel',
-    props: ["layertree", "layervisibles", "layerexpanded"],
+    props: ["layertree", "layervisibles", "layerexpanded", "bloburl"],
     data () {
       return {
         openLayer: false,
@@ -147,6 +160,9 @@
       },
       adjustdone() {
         this.$emit('adjust')
+      },
+      emitsavefile() {
+        this.$emit('savefile')
       },
       fileinputdone(file) {
         this.$emit('fileinput', file)
