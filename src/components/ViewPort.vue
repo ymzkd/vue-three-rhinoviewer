@@ -29,7 +29,8 @@ export default {
   name: 'ViewPort',
   data () {
     const scene = new THREE.Scene()
-    const renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true})
+    const renderer = new THREE.WebGLRenderer({antialias: true})
+    // const renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true})
     const camera = new THREE.PerspectiveCamera( 45, 1, 1, 200000 );
     // camera.up.set(0, 0, 1);
 
@@ -122,8 +123,6 @@ export default {
         object.rotation.set(-Math.PI/2,0,0)
         object.updateMatrix()
         
-        this.loadObj = object;
-        this.scene.add(this.loadObj);
 
         // Construct Layer Tree
         this.layertree = []
@@ -138,6 +137,7 @@ export default {
             data: {}
           }
         }
+
         // Collect Node
         for (const key in object.userData.layers) {
           if (Object.hasOwnProperty.call(object.userData.layers, key)) {
@@ -167,14 +167,22 @@ export default {
         // Create formatted tree for vuetify treeview
         this.layertree = this.bakeTree(layerTable, "00000000-0000-0000-0000-000000000000").children
 
+        var linemat = new THREE.LineBasicMaterial({ color: 0x000000 });
+        linemat.polygonOffset = true;
+        linemat.polygonOffsetFactor = -4;
+        linemat.polygonOffsetUnits = 1;
+
         // Visual setting for all objects
         object.traverse( function(child) {
           if ( Object.prototype.hasOwnProperty.call(child.userData, 'attributes')){
             let id = child.userData.attributes.layerIndex;
+            child.material.polygonOffset = true;
+            child.material.polygonOffsetFactor = 4;
+            child.material.polygonOffsetUnits = 1;
             // Create Mesh Edge
             if (child.type == "Mesh") {
               const edges = new THREE.EdgesGeometry(child.geometry, 60);
-              const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000 }));
+              const line = new THREE.LineSegments(edges, linemat);
               
               line.rotation.set(-Math.PI/2,0,0)
               line.updateMatrix()
@@ -182,12 +190,15 @@ export default {
               this.loadObjEdges[child.uuid] = line
               this.loadObjEdges[child.uuid].visible = object.userData.layers[id].visible;
               this.scene.add(this.loadObjEdges[child.uuid]);
-              // this.scene.add(line);
+
             }
             // apply object visible
             child.visible = object.userData.layers[id].visible;
           }
         }.bind(this))
+
+        this.loadObj = object;
+        this.scene.add(object);
 
         this.adjustCamera(object);
         this.createBlob()
@@ -213,11 +224,10 @@ export default {
       }
     },
     adjustCamera (object) {
-
       // BoundingBox
       const bbox = new THREE.Box3();
       bbox.setFromObject(object);
-      // BoundingSphere
+
       const bsphere = bbox.getBoundingSphere(new THREE.Sphere())
 
       let vFoV = this.camera.getEffectiveFOV();
@@ -234,7 +244,7 @@ export default {
       let newCameraPos = bsphere.center.clone().add(cameraOffs);
 
       this.camera.position.copy(newCameraPos);
-      this.camera.far = cameradistance*5
+      this.camera.far = cameradistance*50
       this.camera.lookAt(bsphere.center);
       this.camera.updateProjectionMatrix()
       this.controls.target.copy(bsphere.center);

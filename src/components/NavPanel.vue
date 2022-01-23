@@ -55,6 +55,7 @@
 
           <!-- AR Button -->
           <v-list-item
+            v-if="isIOS"
             link>
             <v-list-item-icon>
               <div>
@@ -173,6 +174,11 @@
         var target = e.target;
         var file = target.files[0];
         this.fileinputdone(file)
+      }
+    },
+    computed:{
+      isIOS: function(){
+        return /iP(hone|(o|a)d)|Mac/.test(navigator.userAgent);
       }
     },
     mounted: function() {
